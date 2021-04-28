@@ -1,0 +1,9 @@
+{
+	"name": "sampledataprocessing",
+	"location": "eastus2",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "d38bfded-3c4b-4473-a3be-f51d537ecd8e",
+		"tenantId": "c5976b7f-e326-4d2b-9c44-183c29371942"
+	}
+}
