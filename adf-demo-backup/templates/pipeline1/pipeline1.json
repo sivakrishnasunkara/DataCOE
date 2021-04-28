@@ -1,0 +1,339 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name"
+		},
+		"AzureBlobStorage1": {
+			"type": "string"
+		},
+		"AzureBlobStorage2": {
+			"type": "string"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Data flow1",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "demoflow",
+								"type": "DataFlowReference"
+							},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"annotations": [],
+				"lastPublishTime": "2021-04-28T11:58:56Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/demoflow')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/demoflow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "inputdfdataset",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						},
+						{
+							"dataset": {
+								"referenceName": "inputdfflow2",
+								"type": "DatasetReference"
+							},
+							"name": "source2"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DelimitedText2",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "Union1"
+						},
+						{
+							"name": "DerivedColumn1"
+						}
+					],
+					"script": "source(output(\n\t\tVendorID as integer,\n\t\tlpep_pickup_datetime as string,\n\t\tlpep_dropoff_datetime as string,\n\t\tstore_and_fwd_flag as string,\n\t\tRatecodeID as string,\n\t\tPULocationID as string,\n\t\tDOLocationID as string,\n\t\tpassenger_count as string,\n\t\ttrip_distance as string,\n\t\tfare_amount as string,\n\t\textra as string,\n\t\tmta_tax as string,\n\t\ttip_amount as string,\n\t\ttolls_amount as string,\n\t\tehail_fee as string,\n\t\timprovement_surcharge as string,\n\t\ttotal_amount as float,\n\t\tpayment_type as string,\n\t\ttrip_type as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> source1\nsource(output(\n\t\tVendorID as integer,\n\t\tlpep_pickup_datetime as string,\n\t\tlpep_dropoff_datetime as string,\n\t\tstore_and_fwd_flag as string,\n\t\tRatecodeID as string,\n\t\tPULocationID as string,\n\t\tDOLocationID as string,\n\t\tpassenger_count as string,\n\t\ttrip_distance as string,\n\t\tfare_amount as string,\n\t\textra as string,\n\t\tmta_tax as string,\n\t\ttip_amount as string,\n\t\ttolls_amount as string,\n\t\tehail_fee as string,\n\t\timprovement_surcharge as string,\n\t\ttotal_amount as float,\n\t\tpayment_type as string,\n\t\ttrip_type as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> source2\nsource1, source2 union(byName: false)~> Union1\nUnion1 derive(tripexperience = iif(total_amount>=12, \"fair\", \"loss\")) ~> DerivedColumn1\nDerivedColumn1 sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> sink1"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/inputdfdataset')]",
+				"[concat(variables('factoryId'), '/datasets/inputdfflow2')]",
+				"[concat(variables('factoryId'), '/datasets/DelimitedText2')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/inputdfdataset')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('AzureBlobStorage1')]",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "green_tripdata_2018-02.csv",
+						"container": "taxi"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "VendorID",
+						"type": "String"
+					},
+					{
+						"name": "lpep_pickup_datetime",
+						"type": "String"
+					},
+					{
+						"name": "lpep_dropoff_datetime",
+						"type": "String"
+					},
+					{
+						"name": "store_and_fwd_flag",
+						"type": "String"
+					},
+					{
+						"name": "RatecodeID",
+						"type": "String"
+					},
+					{
+						"name": "PULocationID",
+						"type": "String"
+					},
+					{
+						"name": "DOLocationID",
+						"type": "String"
+					},
+					{
+						"name": "passenger_count",
+						"type": "String"
+					},
+					{
+						"name": "trip_distance",
+						"type": "String"
+					},
+					{
+						"name": "fare_amount",
+						"type": "String"
+					},
+					{
+						"name": "extra",
+						"type": "String"
+					},
+					{
+						"name": "mta_tax",
+						"type": "String"
+					},
+					{
+						"name": "tip_amount",
+						"type": "String"
+					},
+					{
+						"name": "tolls_amount",
+						"type": "String"
+					},
+					{
+						"name": "ehail_fee",
+						"type": "String"
+					},
+					{
+						"name": "improvement_surcharge",
+						"type": "String"
+					},
+					{
+						"name": "total_amount",
+						"type": "String"
+					},
+					{
+						"name": "payment_type",
+						"type": "String"
+					},
+					{
+						"name": "trip_type",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/inputdfflow2')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('AzureBlobStorage1')]",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "green_tripdata_2018-01.csv",
+						"container": "taxi"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "VendorID",
+						"type": "String"
+					},
+					{
+						"name": "lpep_pickup_datetime",
+						"type": "String"
+					},
+					{
+						"name": "lpep_dropoff_datetime",
+						"type": "String"
+					},
+					{
+						"name": "store_and_fwd_flag",
+						"type": "String"
+					},
+					{
+						"name": "RatecodeID",
+						"type": "String"
+					},
+					{
+						"name": "PULocationID",
+						"type": "String"
+					},
+					{
+						"name": "DOLocationID",
+						"type": "String"
+					},
+					{
+						"name": "passenger_count",
+						"type": "String"
+					},
+					{
+						"name": "trip_distance",
+						"type": "String"
+					},
+					{
+						"name": "fare_amount",
+						"type": "String"
+					},
+					{
+						"name": "extra",
+						"type": "String"
+					},
+					{
+						"name": "mta_tax",
+						"type": "String"
+					},
+					{
+						"name": "tip_amount",
+						"type": "String"
+					},
+					{
+						"name": "tolls_amount",
+						"type": "String"
+					},
+					{
+						"name": "ehail_fee",
+						"type": "String"
+					},
+					{
+						"name": "improvement_surcharge",
+						"type": "String"
+					},
+					{
+						"name": "total_amount",
+						"type": "String"
+					},
+					{
+						"name": "payment_type",
+						"type": "String"
+					},
+					{
+						"name": "trip_type",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedText2')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('AzureBlobStorage2')]",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": "processed"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		}
+	]
+}
